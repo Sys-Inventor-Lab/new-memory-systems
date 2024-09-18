@@ -14,7 +14,7 @@ iSwap works in the Linux kernel 5.10. It consists of 4 main components:
 
    information. Locate in the  Linux kernel.
 
-2. **Page-level logic Reuse pattern Sampling (PRS) **: This component learns whether a specific page will be used. Implement as a kernel module. Locates in the folder /kernel_module.
+2. **Page-level logic Reuse pattern Sampling (PRS)**: This component learns whether a specific page will be used. Implement as a kernel module. Locates in the folder /kernel_module.
 
 3. **Swap Thread**:  This component manages the pages based on the reuse patterns and conducts swaps that avoid moving hot and will-be-used pages out. Locate in the  Linux kernel.
 
