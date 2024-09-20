@@ -235,6 +235,15 @@ static inline void __frontswap_clear(struct swap_info_struct *sis,
 	atomic_dec(&sis->frontswap_pages);
 }
 
+/**
+ * Modifications@20230803
+ * iSwap's Compress and Swap component
+ * This component distinguishes applications’ pages and applies different 
+ * swap strategies – compress LC applications’ pages (high priority) in the 
+ * main memory and swap out BE applications’ pages (low priority) to hard disk.
+ * By Zhuohao Wang, Lei Liu
+ */
+
 /* iswap swap cache shunt */
 /* iswap anon page check */
 static int __iswap_anon_page_to_nice(struct page *page) {

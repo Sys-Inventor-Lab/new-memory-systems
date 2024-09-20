@@ -3492,12 +3492,18 @@ vm_fault_t do_swap_page(struct vm_fault *vmf)
 	}
 
 	/*for iswap*/
-	//do_count_swapping(pte);
+	/**
+	* Modifications@20230803
+	* Monitoring the Page Presence (PPM)
+	* PPM captures the page-swapping information and records
+	* pages that have been swapped.
+	* By Zhuohao Wang, Lei Liu
+	*/
 	if((pte.pte & 0X00f0000000000000) == 0Xf0000000000000){
-		//如果reserved bits记录满了，清零
+		//if reserved bits is full, clear the reserved bits.
 		pte.pte = pte.pte & 0Xff0fffffffffffff;
 	}
-	//reserved bits加1
+	//reserved bits + 1
 	pte.pte = pte.pte + 0X10000000000000;
 
 

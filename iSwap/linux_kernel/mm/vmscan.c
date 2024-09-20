@@ -66,7 +66,13 @@
 int iswap_test = 1;
 EXPORT_SYMBOL(iswap_test);
 
-/*swapped_list节点*/
+/**
+* Modifications@20230803
+* Data struct for iSwap.
+* By Zhuohao Wang, Lei Liu
+*/
+
+/*swapped_list node*/
 struct tp_page {
 	unsigned long long pg_no;
 	struct page *page;
@@ -89,7 +95,9 @@ struct phy_page {
 	struct hlist_node node;
 };
 
-/*声明一个双向链表*/
+/**
+ * hash tables that record swapped pages and their reuse patterns
+ */
 LIST_HEAD(swapped_list);
 DEFINE_HASHTABLE(vrt_swapped_table, 17);
 DEFINE_HASHTABLE(phy_swapped_table, 17);
@@ -1585,7 +1593,16 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode)
 {
 	int ret = -EINVAL;
 
-	/* iswap */
+	/**
+	* Modifications@20230803
+	* iSwap swap
+	* Classify the hot/cold pages based on the reuse pattern that record by PRS.
+	* Manages the pages based on the reuse patterns and conducts swaps 
+	* that avoid moving hot and will-be-used pages out. 
+	* Linux changes the 4-level page table to 5-level page table
+	* since Linux kernel version 4.14.
+	* By Zhuohao Wang, Lei Liu
+	*/
 	struct phy_page* ppage;
 	struct hlist_node* tmp;
 	struct vrt_page* vpage;
@@ -1771,7 +1788,13 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
 			list_move(&page->lru, src);
 			continue;
 
-		/*iswap: 移回src链表*/
+		/**
+		* Modifications@20230803
+		* Move the hot pages back to the src list
+		* and prevent swapping out.
+		* By Zhuohao Wang, Lei Liu
+		*/
+		/*iswap: move back to src list*/
 		case 9999:
 			list_move(&page->lru, src);
 			continue;
