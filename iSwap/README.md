@@ -20,7 +20,7 @@ iSwap works in the Linux kernel 5.10. It consists of 4 main components:
 
 4. **Compress and Swap Thread**: This component distinguishes applications’ pages and applies different swap strategies – compress LC applications’ pages (high priority) in the main memory and swap out BE applications’ pages (low priority) to hard disk. Locate in the  Linux kernel.
 
-The four components in iSwap work in parallel as independent threads in the kernel.
+The four components in iSwap work in parallel as independent threads in the kernel. All the code that iSwap modified is located in folder /kernel_module. (Note that when you run iSwap, frontswap.c, memory.c, and vmscan.c are in the linux kernel.)
 
 ## How to Run iSwap
 
