@@ -10,7 +10,15 @@
  * add shadow count index
  *
  * Modifications@20150130 recover from an unknown problem. This version works well.
- * By Lei Liu, Hao Yang, Mengyao Xie, Yong Li, Mingjie Xing
+ * By Lei Liu, Hao Yang, Mengyao Xie, Mingjie Xing
+ * 
+ * Modifucations@20230803 scan the page table to check and renew __access_bit for pages
+ * that have been swapped, and store the reuse pattern in a link list.
+ * By Zhuohao Wang, Lei Liu
+ * 
+ * Modifucations@20231006 instead of store the reuse pattern in a link list, store
+ * the reuse pattern in a hash table to accelerate search of a specific page during swap.
+ * By Zhuohao Wang, Lei Liu
  */
 #include <linux/module.h>
 #include <linux/init.h>
@@ -42,17 +50,21 @@
 
 /* Adjust these constants as required */
 #define ITERATIONS 4 /* the number of sampling loops */
-#define TIME_INTERVAL 3
+#define TIME_INTERVAL 3 /* the sampling interval (seconds) */
 
 /* for monitor */
 #define PAGES 30000
 
-/*
- 在vmscan.c文件中定义，用于传送哪些页面不应该被换出。
- vmtrapper在扫描完页面访问位后，更新swapped_list。
-*/
+/**
+ * Modifications@20231006
+ * Define in mm/vmscan.c, these data structs store reuse pattern
+ * of a specific page. And determine the hot/cold pages during swap.
+ * iSwap's kernel module scans the access bit and update the hash table.
+ * By Zhuohao Wang, Lei Liu
+ */
+
 //DEFINE_HASHTABLE(vrt_swapped_table, 17);
-//DEFINE_HASHTABLE(phy_swapped_table, 17);
+//DEFINE_HASHTABLE(phy_swapped_table, 17); 
 // extern struct hlist_head vrt_swapped_table;
 /* vrt_swapped_table node */
 extern struct hlist_head vrt_swapped_table[1<<17];
@@ -107,19 +119,6 @@ static void __exit timer_exit(void) {
 	return;
 }
 
-/**
- * Write by xiemengyao.
- * get the process of current running benchmark.
- * The returned value is the pointer to the process.
- */
-/*
-static struct task_struct * traverse_all_process(void) {
-	struct pid * pid;
-	pid = find_vpid(pid_number);
-	return pid_task(pid,PIDTYPE_PID);
-}
-*/
-
 static struct mm_struct* get_process_mm(struct task_struct* bench_process) {
 	struct mm_struct *mm;
 	if(bench_process == NULL) {
@@ -155,6 +154,12 @@ static int scan_pgtable(void) {
 	struct vrt_page* new_vrt, *cur;
 	struct phy_page* new_phy;
 
+	/**
+	 * Modifications@20231006
+	 * Support sampling all the processes during run time.
+	 * Traverse all the processes and get their page table.
+	 * By Zhuohao Wang, Lei Liu
+	 */
     struct task_struct * bench_process;
 
     for_each_process(bench_process) {
@@ -173,6 +178,13 @@ static int scan_pgtable(void) {
     		pg_count = 0;
 
     		for(address = start; address < end; address += PAGE_SIZE) {
+				/**
+				* Modifications@20230803
+				* Support the 5-level page table for Linux.
+				* Linux changes the 4-level page table to 5-level page table
+				* since Linux kernel version 4.14.
+				* By Zhuohao Wang, Lei Liu
+				*/
     			pgd = pgd_offset(mm, address);
     			if (pgd_none(*pgd) || unlikely(pgd_bad(*pgd))) {
     				continue;
@@ -196,12 +208,15 @@ static int scan_pgtable(void) {
     			pte = *ptep;
 
     			if(pte_present(pte)) {
-    				/*
-    				 检查pte中的保留位
-    				 如果不为0，则说明该pte对应的页面被换出过，然后清除访问位并把该pte的号码记录下来
-    				*/
+					/**
+					* Modifications@20230803
+					* By Zhuohao Wang, Lei Liu
+					* Check the reserved bits in PTE. if not 0, it means
+					* the specific page has been swappped. Then iSwap records the pte
+					* and clear the access bits.
+					*/
     				if(pte.pte & 0X00f0000000000000) {
-    					/*清访问位*/
+    					/*clear the access bits*/
     					if(pte_young(pte)){
     						pte = pte_mkold(pte);
     						set_pte_at(mm, address, ptep, pte);
@@ -249,6 +264,13 @@ static int scan_pgtable(void) {
 			pg_count = 0;
 			
 			for(address = start; address < end; address += PAGE_SIZE) {
+				/**
+				* Modifications@20230803
+				* Support the 5-level page table for Linux.
+				* Linux changes the 4-level page table to 5-level page table
+				* since Linux kernel version 4.14.
+				* By Zhuohao Wang, Lei Liu
+				*/
 				pgd = pgd_offset(mm, address);
 				if (pgd_none(*pgd) || unlikely(pgd_bad(*pgd))) {
 					continue;
@@ -274,7 +296,11 @@ static int scan_pgtable(void) {
 				if(pte_present(pte)) {
 					hash_for_each_possible(vrt_swapped_table, cur, node, number_current_pg) {
 						if(number_current_pg == cur->pg_no) {
-							/* 如果该页被访问了，reuse+1 */
+							/**
+							* Modifications@20230803
+							* Record the reuse pattern of swapped pages.
+							* By Zhuohao Wang, Lei Liu
+							*/
 							if(pte_young(pte)) {
 								cur->reuse_time = (cur->reuse_time >> 1) | (1 << 31);
 							} else {
@@ -303,6 +329,13 @@ static int scan_pgtable(void) {
 			mm = vma->vm_mm;
 			
 			for(address = start; address < end; address += PAGE_SIZE) {
+				/**
+				* Modifications@20230803
+				* Support the 5-level page table for Linux.
+				* Linux changes the 4-level page table to 5-level page table
+				* since Linux kernel version 4.14.
+				* By Zhuohao Wang, Lei Liu
+				*/
 				pgd = pgd_offset(mm, address);
 				if (pgd_none(*pgd) || unlikely(pgd_bad(*pgd))) {
 					continue;
@@ -323,6 +356,12 @@ static int scan_pgtable(void) {
 				ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
 				pte = *ptep;
 
+				/**
+				* Modifications@20230803
+				* Clear the access bit of swapped pages.
+				* Prepare for the next sampling.
+				* By Zhuohao Wang, Lei Liu
+				*/
 				if(pte_present(pte)) {
 					if(pte.pte & 0X00f0000000000000) {
 						if(pte_young(pte)) {
@@ -336,8 +375,6 @@ static int scan_pgtable(void) {
 		} //vma scan end
 
     }
-
-		
 
 	return 1;
 }
