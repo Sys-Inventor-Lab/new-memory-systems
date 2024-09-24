@@ -4,7 +4,7 @@ Link of iSwap paper: [iSwap: A New Memory Page Swap Mechanism for Reducing Ineff
 
 
 
-iSwap is a reuse pattern and learning-based memory page swap mechanism, which reduces the ineffective I/O swap operations and improves the QoS for applications with a high priority in modern OSes. iSwap works well on the latest off-the-shelf Intel/ARM(Phytium CPUs) platforms.
+iSwap is a reuse pattern and learning-based memory page swap mechanism, which reduces the ineffective I/O swap operations and improves the QoS for applications with a high priority in modern OSes. iSwap works well on the latest off-the-shelf platforms.
 
 ## iSwap components
 
