@@ -1,6 +1,8 @@
-/* Monitor reuse pattern and swap time of iswap */
-/* Support all processes */
-/* No output when unloading module */
+/** 
+ * Page-level logic Reuse pattern Sampling (PRS)
+ * PRS works as a Linux kernel module, monitors the reuse pattern of swapped pages.
+ * Support all processes.
+ */
 
 /* change list to hashtable @20230925 */
 /**

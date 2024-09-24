@@ -12,13 +12,13 @@ iSwap works in the Linux kernel 5.10. It consists of 4 main components:
 
 1. **Monitoring the Page Presence (PPM)**: This component captures the page-swapping
 
-   information. Locate in the  Linux kernel.
+   information. Locate in the  Linux kernel. (/linux_kernel/memory.c)
 
 2. **Page-level logic Reuse pattern Sampling (PRS)**: This component learns whether a specific page will be used. Implement as a kernel module. Locates in the folder /kernel_module.
 
-3. **Swap Thread**:  This component manages the pages based on the reuse patterns and conducts swaps that avoid moving hot and will-be-used pages out. Locate in the  Linux kernel.
+3. **Swap Thread**:  This component manages the pages based on the reuse patterns and conducts swaps that avoid moving hot and will-be-used pages out. Locate in the  Linux kernel. (/linux_kernel/vmscan.c)
 
-4. **Compress and Swap Thread**: This component distinguishes applications’ pages and applies different swap strategies – compress LC applications’ pages (high priority) in the main memory and swap out BE applications’ pages (low priority) to hard disk. Locate in the  Linux kernel.
+4. **Compress and Swap Thread**: This component distinguishes applications’ pages and applies different swap strategies – compress LC applications’ pages (high priority) in the main memory and swap out BE applications’ pages (low priority) to hard disk. Locate in the  Linux kernel. (/linux_kernel/frontswap.c)
 
 The four components in iSwap work in parallel as independent threads in the kernel. All the code that iSwap modified is located in folder /kernel_module. (Note that when you run iSwap, frontswap.c, memory.c, and vmscan.c are in the linux kernel.)
 
