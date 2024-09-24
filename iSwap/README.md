@@ -54,4 +54,8 @@ If you want to remove iSwap's kernel module:
 rmmod iswap.ko
 ```
 
-5. Ready to run users' applications. And use `nice/renice` to specify the high priority applications.
+5. Ready to run users' applications. And use `nice/renice` to specify the high priority applications. Currently:
+* For high-priority applications: -20 <= nice < 0
+* For low-priority applications: 0 <= nice <= 19
+
+
